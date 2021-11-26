@@ -2,6 +2,7 @@ package com.rest.app;
 
 import javassist.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -29,16 +31,22 @@ public class BookController {
     @GetMapping
     public List<Book> getAllBookRecords(){
 
-        List<Book> allRecords = bookRepository.findAll();
-
-        return allRecords;
+        return bookRepository.findAll();
     }
 
 
     @GetMapping(value = "{bookId}")
-    public Book getBookById(@PathVariable(value = "bookId") Long bookId) {
+    public Book getBookById(@PathVariable(value = "bookId") Long bookId) throws ResponseStatusException {
 
-        return bookRepository.findById(bookId).get();
+
+        Optional<Book> book = bookRepository.findById(bookId);
+
+        if(!book.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+
+        return book.get();
 
 
     }
@@ -77,13 +85,13 @@ public class BookController {
 //TODO write /delete endpoint using tdd
 
     @DeleteMapping(value = "{bookId}")
-    public void deleteBookRecord(@PathVariable(value = "bookId") Long bookId) throws Exception  {
+    public void deleteBookRecordById(@PathVariable(value = "bookId") Long bookId) throws ResponseStatusException  {
 
-       /* if (!bookRepository.findById(bookId).isPresent()) {
-            throw new NotFoundException("book id" + bookId + "not present");
+       if (!bookRepository.findById(bookId).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
 
-        bookRepository.deleteById(bookId);*/
+        bookRepository.deleteById(bookId);
     }
 
 

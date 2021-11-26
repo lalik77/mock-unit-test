@@ -2,7 +2,6 @@ package com.rest.app;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.junit.Before;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -10,12 +9,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,6 +26,7 @@ import java.util.Optional;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -60,6 +62,9 @@ class BookControllerTest {
 
         when(bookRepository.findAll()).thenReturn(records);
 
+
+        //TODO : refactor
+
         mockMvc.perform(MockMvcRequestBuilders
                 .get("/book")
                 .contentType(MediaType.APPLICATION_JSON))
@@ -69,16 +74,34 @@ class BookControllerTest {
     }
 
     @Test
-    void getBookRecordById_success () throws Exception {
-        List<Book> records = new ArrayList<>(Arrays.asList(RECORD_1,RECORD_2,RECORD_3));
-        when(bookRepository.findById(records.stream()
-                .findFirst()
-                .get()
-                .getBookId())
-        )
-                .thenReturn(
-                Optional.of(RECORD_1));
+    public void getBookRecordById_notFound() throws Exception {
 
+        //given  ==> act   //when ==> arrange
+
+         when(bookRepository.findById(10L))
+                 .thenThrow( new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+      /*  given(bookRepository.findById(7L)).
+                willThrow(new NotFoundException("Wrong Id => book does not exist"));*/
+
+        //then => Assertions
+
+                 mockMvc.perform(MockMvcRequestBuilders
+                .get("book/10",10)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+
+
+        //then => Assertions
+
+
+
+    }
+
+    @Test
+    void getBookRecordById_success () throws Exception {
+
+        when(bookRepository.findById(RECORD_1.getBookId())).thenReturn(Optional.ofNullable(RECORD_1));
 
         mockMvc.perform(MockMvcRequestBuilders
                 .get("/book/1")
@@ -156,6 +179,28 @@ class BookControllerTest {
                 .andExpect(status().isOk());
 
      }
+
+
+     @Test
+    public void deleteRecordById_notFound() throws Exception {
+
+         //given  ==> act   // when ==> arrange
+
+         given(bookRepository.findById(4L))
+                 .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        /* when(bookRepository.findById(RECORD_2.getBookId())).thenReturn(Optional.of(RECORD_2));*/
+
+         mockMvc.perform(MockMvcRequestBuilders
+                 .delete("/book/4",4)
+                 .contentType(MediaType.APPLICATION_JSON))
+                 .andExpect(status().isNotFound());
+
+
+
+     }
+
+
 
 
 
